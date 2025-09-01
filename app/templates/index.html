@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KeyVibe - Typing Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      cursor: none;
+      position: relative;
+    }
+    .cursor-dot {
+      position: fixed;
+      top: 0; left: 0;
+      width: 10px; height: 10px;
+      background: #3b82f6;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease-out, opacity 0.3s;
+      z-index: 9999;
+      mix-blend-mode: difference;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 text-black dark:text-white transition-colors duration-500">
+
+  <div id="cursorDot" class="cursor-dot"></div>
+
+  <div class="container mx-auto px-4 py-8">
+    
+    <!-- Dark mode toggle -->
+    <div class="flex justify-end mb-4">
+      <button id="darkModeToggle" class="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white transition">Toggle Dark Mode</button>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold mb-2">KeyVibe</h1>
+      <p>Discover insights about your focus, stress, and confidence through your typing patterns</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex justify-center mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-1 flex space-x-2">
+        <button id="typingTab" class="px-6 py-2 rounded-md bg-blue-500 text-white font-medium transition-colors">Typing Test</button>
+        <a href="/dashboard" class="px-6 py-2 rounded-md text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Typing Interface -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 max-w-4xl mx-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Start Typing</h2>
+        <div class="flex space-x-4 text-sm">
+          <div>Time: <span id="timer" class="font-mono font-bold text-blue-600 dark:text-blue-400">00:00</span></div>
+          <div>WPM: <span id="liveWpm" class="font-mono font-bold text-green-600 dark:text-green-400">0</span></div>
+        </div>
+      </div>
+
+      <textarea 
+        id="typingArea" 
+        placeholder="Start typing here to analyze your patterns..." 
+        class="w-full h-48 p-4 border-2 border-black-200 dark:border-gray-600 rounded-lg focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none resize-none text-lg leading-relaxed text-black dark:text-white bg-white dark:bg-gray-900"
+      ></textarea>
+      
+      <div class="flex justify-between items-center mt-4 text-sm">
+        <div class="flex space-x-6">
+          <div>Characters: <span id="charCount" class="font-mono">0</span></div>
+          <div>Words: <span id="wordCount" class="font-mono">0</span></div>
+          <div>Corrections: <span id="correctionCount" class="font-mono">0</span></div>
+        </div>
+        <div class="flex space-x-2">
+          <button id="clearBtn" class="px-4 py-2 bg-black dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 text-white rounded-md transition">Clear</button>
+          <button id="analyzeBtn" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition" disabled>Analyze Typing</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsSection" class="hidden max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h3 class="text-xl font-semibold mb-3" id="moodTitle"></h3>
+      <p class="mb-4" id="moodMessage"></p>
+      <div id="moodSuggestions" class="space-y-2"></div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div>
+          <p class="text-sm font-medium mb-1">Focus Score</p>
+          <p id="focusScore" class="text-2xl font-bold"></p>
+          <div class="bg-gray-300 dark:bg-gray-700 rounded-full h-2 mt-1">
+            <div id="focusBar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium mb-1">Stress Level</p>
+          <p id="stressScore" class="text-2xl font-bold"></p>
+          <div class="bg-gray-300 dark:bg-gray-700 rounded-full h-2 mt-1">
+            <div id="stressBar" class="bg-red-500 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium mb-1">Confidence</p>
+          <p id="confidenceScore" class="text-2xl font-bold"></p>
+          <div class="bg-gray-300 dark:bg-gray-700 rounded-full h-2 mt-1">
+            <div id="confidenceBar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <h4 class="text-lg font-semibold mb-2">Detailed Metrics</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center">
+            <p class="font-medium">Speed</p>
+            <p id="avgSpeed" class="text-xl font-bold">0 WPM</p>
+          </div>
+          <div class="text-center">
+            <p class="font-medium">Corrections</p>
+            <p id="corrections" class="text-xl font-bold">0</p>
+          </div>
+          <div class="text-center">
+            <p class="font-medium">Pauses</p>
+            <p id="pauses" class="text-xl font-bold">0</p>
+          </div>
+          <div class="text-center">
+            <p class="font-medium">Bursts</p>
+            <p id="bursts" class="text-xl font-bold">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Dark mode toggle logic
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const htmlEl = document.documentElement;
+
+    if (
+      localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      htmlEl.classList.add('dark');
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+      htmlEl.classList.toggle('dark');
+      if (htmlEl.classList.contains('dark')) {
+        localStorage.setItem('theme', 'dark');
+      } else {
+        localStorage.setItem('theme', 'light');
+      }
+    });
+
+    // Cursor dot effect
+    const cursorDot = document.getElementById('cursorDot');
+    window.addEventListener('mousemove', (e) => {
+      cursorDot.style.left = e.clientX + 'px';
+      cursorDot.style.top = e.clientY + 'px';
+    });
+
+    // TypingTracker class implementation
+    class TypingTracker {
+      constructor() {
+        this.keystrokeData = [];
+        this.startTime = null;
+        this.isTracking = false;
+        this.correctionCount = 0;
+        this.lastKeyTime = null;
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        const typingArea = document.getElementById('typingArea');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        // No loadChallenge button in this interface, remove if present
+
+        // Typing area events
+        typingArea.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        typingArea.addEventListener('keyup', (e) => this.handleKeyUp(e));
+        typingArea.addEventListener('input', (e) => this.handleInput(e));
+
+        // Button events
+        analyzeBtn.addEventListener('click', () => this.analyzeTyping());
+        clearBtn.addEventListener('click', () => this.clearAll());
+
+        // Start timer and tracking when user starts typing
+        typingArea.addEventListener('input', () => {
+          if (!this.isTracking && typingArea.value.length > 0) {
+            this.startTracking();
+          }
+          this.updateLiveStats();
+        });
+      }
+
+      handleKeyDown(event) {
+        if (!this.isTracking) return;
+        const timestamp = Date.now();
+        const key = event.key;
+        if (key === 'Backspace') {
+          this.correctionCount++;
+        }
+        this.keystrokeData.push({
+          key: key,
+          timestamp: timestamp,
+          type: 'keydown'
+        });
+        this.lastKeyTime = timestamp;
+      }
+
+      handleKeyUp(event) {
+        if (!this.isTracking) return;
+        const timestamp = Date.now();
+        this.keystrokeData.push({
+          key: event.key,
+          timestamp: timestamp,
+          type: 'keyup'
+        });
+      }
+
+      handleInput(event) {
+        this.updateLiveStats();
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        analyzeBtn.disabled = event.target.value.trim().length === 0;
+      }
+
+      startTracking() {
+        this.startTime = Date.now();
+        this.isTracking = true;
+        this.keystrokeData = [];
+        this.correctionCount = 0;
+        this.startTimer();
+      }
+
+      startTimer() {
+        const timerElement = document.getElementById('timer');
+        const updateTimer = () => {
+          if (!this.isTracking) return;
+          const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          timerElement.textContent = `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+          setTimeout(updateTimer, 1000);
+        };
+        updateTimer();
+      }
+
+      updateLiveStats() {
+        const typingArea = document.getElementById('typingArea');
+        const text = typingArea.value;
+        document.getElementById('charCount').textContent = text.length;
+        document.getElementById('wordCount').textContent = text.trim() ? text.trim().split(/\s+/).length : 0;
+        document.getElementById('correctionCount').textContent = this.correctionCount;
+        if (this.startTime && text.trim().length > 0) {
+          const elapsed = (Date.now() - this.startTime) / 1000 / 60;
+          const words = text.trim().split(/\s+/).length;
+          const wpm = Math.round(words / elapsed);
+          document.getElementById('liveWpm').textContent = isFinite(wpm) ? wpm : 0;
+        }
+      }
+
+      async analyzeTyping() {
+        const typingArea = document.getElementById('typingArea');
+        const text = typingArea.value.trim();
+        if (!text || !this.isTracking) {
+          alert('Please type some text first!');
+          return;
+        }
+        this.isTracking = false;
+        const totalTime = (Date.now() - this.startTime) / 1000;
+        const analysisData = {
+          text: text,
+          totalTime: totalTime,
+          keystrokeData: this.keystrokeData
+        };
+        try {
+          const analyzeBtn = document.getElementById('analyzeBtn');
+          analyzeBtn.textContent = 'Analyzing...';
+          analyzeBtn.disabled = true;
+
+          // Replace the URL below with your actual backend API endpoint
+          const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(analysisData)
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            this.displayResults(result.analysis, result.moodFeedback);
+          } else {
+            throw new Error(result.error || 'Analysis failed');
+          }
+        } catch(error) {
+          console.error('Analysis error:', error);
+          alert('Error analyzing typing patterns. Please try again.');
+        } finally {
+          const analyzeBtn = document.getElementById('analyzeBtn');
+          analyzeBtn.textContent = 'Analyze Typing';
+          analyzeBtn.disabled = false;
+        }
+      }
+
+      displayResults(analysis, moodFeedback) {
+        const resultsSection = document.getElementById('resultsSection');
+        resultsSection.classList.remove('hidden');
+        resultsSection.scrollIntoView({behavior: 'smooth'});
+        document.getElementById('moodTitle').textContent = moodFeedback.title;
+        document.getElementById('moodMessage').textContent = moodFeedback.message;
+        const suggestionsContainer = document.getElementById('moodSuggestions');
+        suggestionsContainer.innerHTML = '';
+        moodFeedback.suggestions.forEach(suggestion => {
+          const div = document.createElement('div');
+          div.className = 'flex items-start space-x-2';
+          div.innerHTML = `<span class="text-green-500 mt-1">✓</span><span class="text-gray-700">${suggestion}</span>`;
+          suggestionsContainer.appendChild(div);
+        });
+        this.updateScoreDisplay('focus', analysis.focus_score);
+        this.updateScoreDisplay('stress', analysis.stress_score);
+        this.updateScoreDisplay('confidence', analysis.confidence_score);
+        document.getElementById('avgSpeed').textContent = `${Math.round(analysis.avg_keystroke_speed)} WPM`;
+        document.getElementById('corrections').textContent = analysis.backspace_count;
+        document.getElementById('pauses').textContent = analysis.pause_count;
+        document.getElementById('bursts').textContent = analysis.burst_count;
+      }
+
+      updateScoreDisplay(type, score) {
+        const scoreElement = document.getElementById(`${type}Score`);
+        const barElement = document.getElementById(`${type}Bar`);
+        scoreElement.textContent = Math.round(score);
+        barElement.style.width = `${score}%`;
+        barElement.style.transition = 'width 1s ease-in-out';
+      }
+
+      clearAll() {
+        document.getElementById('typingArea').value = '';
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('liveWpm').textContent = '0';
+        document.getElementById('charCount').textContent = '0';
+        document.getElementById('wordCount').textContent = '0';
+        document.getElementById('correctionCount').textContent = '0';
+        document.getElementById('resultsSection').classList.add('hidden');
+        this.keystrokeData = [];
+        this.startTime = null;
+        this.isTracking = false;
+        this.correctionCount = 0;
+        document.getElementById('analyzeBtn').disabled = true;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      new TypingTracker();
+    });
+  </script>
+</body>
+</html>
